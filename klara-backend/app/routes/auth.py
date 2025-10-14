@@ -1,15 +1,18 @@
-from fastapi import APIRouter, HTTPException
-from app.models import UserLoginRequest, User
-from app.database import db
+from fastapi import APIRouter, HTTPException, Depends
+from sqlalchemy.orm import Session
+
+from app.models import UserLoginRequest, UserResponse
+from app.access import user_access
+from app.database import get_db
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
 
-@router.post("/login", response_model=User)
-async def login(request: UserLoginRequest):
+@router.post("/login", response_model=UserResponse)
+async def login(request: UserLoginRequest, db: Session = Depends(get_db)):
     """Simple email-based login - creates user if doesn't exist"""
     try:
-        user = db.get_or_create_user(request.email)
+        user = user_access.get_or_create_user(session=db, email=request.email)
         return user
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Login failed: {str(e)}")

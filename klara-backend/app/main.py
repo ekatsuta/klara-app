@@ -12,8 +12,9 @@ from app.routes import auth, brain_dumps
 app = FastAPI(
     title="Klara Backend",
     description="Mental load management for parents",
-    version="1.0.0"
+    version="1.0.0",
 )
+
 
 # Add CORS middleware for frontend
 app.add_middleware(
