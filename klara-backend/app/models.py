@@ -15,7 +15,7 @@ class UserResponse(BaseModel):
 
     id: int
     email: str
-    created_at: datetime
+    first_name: str
 
 
 # Brain dump models

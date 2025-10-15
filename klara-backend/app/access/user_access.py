@@ -13,11 +13,11 @@ def get_or_create_user(session: Session, email: str) -> UserResponse:
     user = session.query(User).filter(User.email == email).first()
 
     if user:
-        return UserResponse(id=user.id, email=user.email, created_at=user.created_at)
+        return UserResponse(id=user.id, email=user.email, first_name=user.first_name)
 
     # Create new user
     user = User(email=email)
     session.add(user)
     session.flush()
 
-    return UserResponse(id=user.id, email=user.email, created_at=user.created_at)
+    return UserResponse(id=user.id, email=user.email, first_name=user.first_name)
