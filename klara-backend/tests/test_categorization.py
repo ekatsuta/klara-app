@@ -1,7 +1,6 @@
 """
 Test AI categorization of brain dumps using pytest and TestClient
 """
-import pytest
 
 
 def test_shopping_items_multiple(client, test_user):
@@ -10,8 +9,8 @@ def test_shopping_items_multiple(client, test_user):
         "/brain-dumps/",
         json={
             "text": "Buy groceries: milk, eggs, bread, and cheese",
-            "user_id": test_user.id
-        }
+            "user_id": test_user.id,
+        },
     )
 
     assert response.status_code == 200
@@ -34,10 +33,7 @@ def test_shopping_items_simple(client, test_user):
     """Test simple shopping items"""
     response = client.post(
         "/brain-dumps/",
-        json={
-            "text": "Need milk and eggs from the store",
-            "user_id": test_user.id
-        }
+        json={"text": "Need milk and eggs from the store", "user_id": test_user.id},
     )
 
     assert response.status_code == 200
@@ -53,8 +49,8 @@ def test_task_with_due_date(client, test_user):
         "/brain-dumps/",
         json={
             "text": "Buy birthday present for Noah's party by Friday",
-            "user_id": test_user.id
-        }
+            "user_id": test_user.id,
+        },
     )
 
     assert response.status_code == 200
@@ -73,8 +69,8 @@ def test_task_simple(client, test_user):
         "/brain-dumps/",
         json={
             "text": "Call the plumber about the leaky faucet",
-            "user_id": test_user.id
-        }
+            "user_id": test_user.id,
+        },
     )
 
     assert response.status_code == 200
@@ -91,8 +87,8 @@ def test_calendar_event_with_time(client, test_user):
         "/brain-dumps/",
         json={
             "text": "Doctor appointment on October 25th at 2:30pm",
-            "user_id": test_user.id
-        }
+            "user_id": test_user.id,
+        },
     )
 
     assert response.status_code == 200
@@ -109,10 +105,7 @@ def test_calendar_event_simple(client, test_user):
     """Test simple calendar event categorization"""
     response = client.post(
         "/brain-dumps/",
-        json={
-            "text": "Soccer practice next Thursday at 4pm",
-            "user_id": test_user.id
-        }
+        json={"text": "Soccer practice next Thursday at 4pm", "user_id": test_user.id},
     )
 
     assert response.status_code == 200
@@ -130,8 +123,8 @@ def test_shopping_items_with_quantities(client, test_user):
         "/brain-dumps/",
         json={
             "text": "Get 2 gallons of milk, 1 dozen eggs, and 3 pounds of cheese",
-            "user_id": test_user.id
-        }
+            "user_id": test_user.id,
+        },
     )
 
     assert response.status_code == 200
@@ -145,10 +138,7 @@ def test_task_reminder(client, test_user):
     """Test task reminder categorization"""
     response = client.post(
         "/brain-dumps/",
-        json={
-            "text": "Remember to call mom this weekend",
-            "user_id": test_user.id
-        }
+        json={"text": "Remember to call mom this weekend", "user_id": test_user.id},
     )
 
     assert response.status_code == 200
@@ -157,4 +147,3 @@ def test_task_reminder(client, test_user):
     assert isinstance(result, dict)
     assert "description" in result
     assert result["user_id"] == test_user.id
-

@@ -1,7 +1,7 @@
 """
 Pytest configuration and fixtures for testing
 """
-import os
+
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -23,7 +23,7 @@ def test_db_engine():
     engine = create_engine(
         TEST_DATABASE_URL,
         connect_args={"check_same_thread": False},  # Needed for SQLite
-        echo=False
+        echo=False,
     )
 
     # Create all tables
@@ -40,9 +40,7 @@ def test_db_engine():
 def test_db_session(test_db_engine):
     """Create a test database session"""
     TestingSessionLocal = sessionmaker(
-        autocommit=False,
-        autoflush=False,
-        bind=test_db_engine
+        autocommit=False, autoflush=False, bind=test_db_engine
     )
 
     session = TestingSessionLocal()
@@ -73,9 +71,7 @@ def client(test_db_session):
 @pytest.fixture(scope="function")
 def test_user(test_db_session):
     """Create a test user in the database"""
-    user = User(
-        email="test@example.com"
-    )
+    user = User(email="test@example.com")
     test_db_session.add(user)
     test_db_session.commit()
     test_db_session.refresh(user)

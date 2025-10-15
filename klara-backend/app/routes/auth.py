@@ -13,6 +13,7 @@ async def login(request: UserLoginRequest, db: Session = Depends(get_db)):
     """Simple email-based login - creates user if doesn't exist"""
     try:
         user = user_access.get_or_create_user(session=db, email=request.email)
+        db.commit()
         return user
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Login failed: {str(e)}")

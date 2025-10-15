@@ -32,8 +32,4 @@ app.include_router(brain_dumps.router)
 
 @app.get("/")
 def read_root():
-    return {
-        "message": "Klara Backend API",
-        "status": "running",
-        "version": "1.0.0"
-    }
+    return {"message": "Klara Backend API", "status": "running", "version": "1.0.0"}

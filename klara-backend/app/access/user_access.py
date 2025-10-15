@@ -1,6 +1,7 @@
 """
 User database access functions
 """
+
 from sqlalchemy.orm import Session
 from app.db_models import User
 from app.models import UserResponse
@@ -12,21 +13,11 @@ def get_or_create_user(session: Session, email: str) -> UserResponse:
     user = session.query(User).filter(User.email == email).first()
 
     if user:
-        return UserResponse(
-            id=user.id,
-            email=user.email,
-            created_at=user.created_at
-        )
+        return UserResponse(id=user.id, email=user.email, created_at=user.created_at)
 
     # Create new user
     user = User(email=email)
     session.add(user)
-    session.commit()
-    session.refresh(user)
+    session.flush()
 
-    return UserResponse(
-        id=user.id,
-        email=user.email,
-        created_at=user.created_at
-    )
-
+    return UserResponse(id=user.id, email=user.email, created_at=user.created_at)

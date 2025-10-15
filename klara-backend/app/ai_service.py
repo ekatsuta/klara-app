@@ -9,7 +9,7 @@ from app.models import (
     CategoryDetection,
     ProcessedTask,
     ProcessedShoppingItem,
-    ProcessedCalendarEvent
+    ProcessedCalendarEvent,
 )
 
 
@@ -26,15 +26,18 @@ class AIService:
             model="claude-sonnet-4-20250514",
             anthropic_api_key=self.anthropic_api_key,
             temperature=0.3,
-            max_tokens=2048
+            max_tokens=2048,
         )
 
     async def _detect_category(self, text: str) -> str:
         """Step 1: Detect the category of the brain dump"""
         parser = PydanticOutputParser(pydantic_object=CategoryDetection)
 
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", """You are an AI categorization expert helping parents organize their mental load.
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                (
+                    "system",
+                    """You are an AI categorization expert helping parents organize their mental load.
 
 Your ONLY task is to categorize the user's input into ONE of these categories:
 
@@ -50,15 +53,16 @@ Categories:
 
 Focus ONLY on categorization.
 
-{format_instructions}"""),
-            ("human", "{input}")
-        ])
+{format_instructions}""",
+                ),
+                ("human", "{input}"),
+            ]
+        )
 
         chain = prompt | self.llm | parser
-        result = await chain.ainvoke({
-            "input": text,
-            "format_instructions": parser.get_format_instructions()
-        })
+        result = await chain.ainvoke(
+            {"input": text, "format_instructions": parser.get_format_instructions()}
+        )
 
         return result.category
 
@@ -67,8 +71,11 @@ Focus ONLY on categorization.
         parser = PydanticOutputParser(pydantic_object=ProcessedTask)
         today = datetime.now().strftime("%Y-%m-%d")
 
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", """You are an AI assistant helping to structure task information.
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                (
+                    "system",
+                    """You are an AI assistant helping to structure task information.
 
 Extract the following from the user's input:
 1. A clear, concise description (5-10 words max)
@@ -76,16 +83,20 @@ Extract the following from the user's input:
 
 Current date is {today}. Use this to calculate relative dates like "tomorrow", "next week", etc.
 
-{format_instructions}"""),
-            ("human", "{input}")
-        ])
+{format_instructions}""",
+                ),
+                ("human", "{input}"),
+            ]
+        )
 
         chain = prompt | self.llm | parser
-        result = await chain.ainvoke({
-            "input": text,
-            "today": today,
-            "format_instructions": parser.get_format_instructions()
-        })
+        result = await chain.ainvoke(
+            {
+                "input": text,
+                "today": today,
+                "format_instructions": parser.get_format_instructions(),
+            }
+        )
 
         return result
 
@@ -98,10 +109,11 @@ Current date is {today}. Use this to calculate relative dates like "tomorrow", "
 
         parser = PydanticOutputParser(pydantic_object=ShoppingItemsList)
 
-        prompt = ChatPromptTemplate.from_messages([
-            (
-                "system",
-                """
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                (
+                    "system",
+                    """
                 You are an AI assistant helping to structure shopping list information.
 
                 Extract ALL items mentioned in the user's input as separate shopping items.
@@ -117,18 +129,16 @@ Current date is {today}. Use this to calculate relative dates like "tomorrow", "
                 IMPORTANT: Extract EVERY item mentioned, even if they're in a comma-separated list.
 
                 {format_instructions}
-                """),
-            (
-                "human",
-                "{input}"
-            )
-        ])
+                """,
+                ),
+                ("human", "{input}"),
+            ]
+        )
 
         chain = prompt | self.llm | parser
-        result = await chain.ainvoke({
-            "input": text,
-            "format_instructions": parser.get_format_instructions()
-        })
+        result = await chain.ainvoke(
+            {"input": text, "format_instructions": parser.get_format_instructions()}
+        )
         return result.items
 
     async def _process_calendar_event(self, text: str) -> ProcessedCalendarEvent:
@@ -136,8 +146,11 @@ Current date is {today}. Use this to calculate relative dates like "tomorrow", "
         parser = PydanticOutputParser(pydantic_object=ProcessedCalendarEvent)
         today = datetime.now().strftime("%Y-%m-%d")
 
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", """You are an AI assistant helping to structure calendar event information.
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                (
+                    "system",
+                    """You are an AI assistant helping to structure calendar event information.
 
 Extract the following from the user's input:
 1. A clear event title (5-10 words max)
@@ -147,16 +160,20 @@ Extract the following from the user's input:
 
 Current date is {today}. Use this to calculate relative dates like "tomorrow", "next Saturday", etc.
 
-{format_instructions}"""),
-            ("human", "{input}")
-        ])
+{format_instructions}""",
+                ),
+                ("human", "{input}"),
+            ]
+        )
 
         chain = prompt | self.llm | parser
-        result = await chain.ainvoke({
-            "input": text,
-            "today": today,
-            "format_instructions": parser.get_format_instructions()
-        })
+        result = await chain.ainvoke(
+            {
+                "input": text,
+                "today": today,
+                "format_instructions": parser.get_format_instructions(),
+            }
+        )
 
         return result
 
@@ -192,5 +209,5 @@ Current date is {today}. Use this to calculate relative dates like "tomorrow", "
             # Fallback to task
             return ProcessedTask(
                 description=text[:100] + ("..." if len(text) > 100 else ""),
-                due_date=None
+                due_date=None,
             )
