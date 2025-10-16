@@ -1,5 +1,8 @@
 """
 Test AI categorization of brain dumps using pytest and TestClient
+
+Note: Brain dumps now return AI suggestions without saving to database.
+To save items, use the respective save endpoints (/tasks, /shopping-items, /calendar-events).
 """
 
 
@@ -16,17 +19,16 @@ def test_shopping_items_multiple(client, test_user):
     assert response.status_code == 200
     result = response.json()
 
-    # Shopping items should return as a list
+    # Shopping items should return as a list of ProcessedShoppingItem (no IDs yet)
     assert isinstance(result, list)
     assert len(result) == 4
 
-    # Verify each item has the expected structure
+    # Verify each item has the expected structure (AI suggestions, not saved)
     for item in result:
-        assert "id" in item
-        assert "user_id" in item
         assert "description" in item
-        assert "raw_input" in item
-        assert item["user_id"] == test_user.id
+        # Should NOT have database fields like id, user_id, raw_input, created_at
+        assert "id" not in item
+        assert "user_id" not in item
 
 
 def test_shopping_items_simple(client, test_user):
@@ -56,15 +58,20 @@ def test_task_with_due_date(client, test_user):
     assert response.status_code == 200
     result = response.json()
 
-    # Task should return as a single object (not a list)
+    # Task should return as ProcessedTask (not saved to DB)
     assert isinstance(result, dict)
-    assert "due_date" in result
     assert "description" in result
-    assert result["user_id"] == test_user.id
+    assert "due_date" in result
+    assert "estimated_time_minutes" in result
+    assert "should_decompose" in result
+    assert "subtasks" in result
+    # Should NOT have database fields
+    assert "id" not in result
+    assert "user_id" not in result
 
 
 def test_task_simple(client, test_user):
-    """Test simple task categorization"""
+    """Test simple task categorization (should not be decomposed)"""
     response = client.post(
         "/brain-dumps/",
         json={
@@ -76,9 +83,20 @@ def test_task_simple(client, test_user):
     assert response.status_code == 200
     result = response.json()
 
+    # Should return ProcessedTask
     assert isinstance(result, dict)
     assert "description" in result
-    assert result["user_id"] == test_user.id
+    assert "estimated_time_minutes" in result
+    assert "should_decompose" in result
+    assert "subtasks" in result
+
+    # Simple task should NOT be decomposed
+    assert result["should_decompose"] is False
+    assert len(result["subtasks"]) == 0
+
+    # Should NOT have database fields
+    assert "id" not in result
+    assert "user_id" not in result
 
 
 def test_calendar_event_with_time(client, test_user):
@@ -94,11 +112,14 @@ def test_calendar_event_with_time(client, test_user):
     assert response.status_code == 200
     result = response.json()
 
+    # Should return ProcessedCalendarEvent (not saved to DB)
     assert isinstance(result, dict)
+    assert "description" in result
     assert "event_date" in result
     assert "event_time" in result
-    assert "description" in result
-    assert result["user_id"] == test_user.id
+    # Should NOT have database fields
+    assert "id" not in result
+    assert "user_id" not in result
 
 
 def test_calendar_event_simple(client, test_user):
@@ -111,10 +132,13 @@ def test_calendar_event_simple(client, test_user):
     assert response.status_code == 200
     result = response.json()
 
+    # Should return ProcessedCalendarEvent (not saved to DB)
     assert isinstance(result, dict)
-    assert "event_date" in result
     assert "description" in result
-    assert result["user_id"] == test_user.id
+    assert "event_date" in result
+    # Should NOT have database fields
+    assert "id" not in result
+    assert "user_id" not in result
 
 
 def test_shopping_items_with_quantities(client, test_user):
@@ -144,6 +168,51 @@ def test_task_reminder(client, test_user):
     assert response.status_code == 200
     result = response.json()
 
+    # Should return ProcessedTask
     assert isinstance(result, dict)
     assert "description" in result
-    assert result["user_id"] == test_user.id
+    assert "estimated_time_minutes" in result
+    assert "should_decompose" in result
+    assert "subtasks" in result
+    # Should NOT have database fields
+    assert "id" not in result
+    assert "user_id" not in result
+
+
+def test_task_complex_with_decomposition(client, test_user):
+    """Test complex task that should be decomposed into subtasks"""
+    response = client.post(
+        "/brain-dumps/",
+        json={
+            "text": "Plan Noah's birthday party next month",
+            "user_id": test_user.id,
+        },
+    )
+
+    assert response.status_code == 200
+    result = response.json()
+
+    # Should return ProcessedTask with decomposition
+    assert isinstance(result, dict)
+    assert "description" in result
+    assert "estimated_time_minutes" in result
+    assert "should_decompose" in result
+    assert "reasoning" in result
+    assert "subtasks" in result
+
+    # Complex task SHOULD be decomposed
+    assert result["should_decompose"] is True
+    assert len(result["subtasks"]) >= 3  # Should have multiple subtasks
+
+    # Verify subtask structure
+    for subtask in result["subtasks"]:
+        assert "description" in subtask
+        assert "order" in subtask
+        assert "estimated_time_minutes" in subtask
+        # Subtask should not have database fields
+        assert "id" not in subtask
+        assert "parent_task_id" not in subtask
+
+    # Should NOT have database fields
+    assert "id" not in result
+    assert "user_id" not in result

@@ -71,7 +71,7 @@ def client(test_db_session):
 @pytest.fixture(scope="function")
 def test_user(test_db_session):
     """Create a test user in the database"""
-    user = User(email="test@example.com")
+    user = User(email="test@example.com", first_name="Test")
     test_db_session.add(user)
     test_db_session.commit()
     test_db_session.refresh(user)

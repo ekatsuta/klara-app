@@ -10,6 +10,7 @@ from app.models import (
     ProcessedTask,
     ProcessedShoppingItem,
     ProcessedCalendarEvent,
+    SubTask,
 )
 
 
@@ -67,7 +68,8 @@ Focus ONLY on categorization.
         return result.category
 
     async def _process_task(self, text: str) -> ProcessedTask:
-        """Step 2: Process a task"""
+        """Step 2: Process a task and analyze for decomposition"""
+        # Use ProcessedTask directly for LLM parsing
         parser = PydanticOutputParser(pydantic_object=ProcessedTask)
         today = datetime.now().strftime("%Y-%m-%d")
 
@@ -75,11 +77,46 @@ Focus ONLY on categorization.
             [
                 (
                     "system",
-                    """You are an AI assistant helping to structure task information.
+                    """You are an AI task planning assistant helping busy parents manage their mental load.
 
-Extract the following from the user's input:
-1. A clear, concise description (5-10 words max)
-2. A due date if mentioned (YYYY-MM-DD format)
+Your job is to:
+1. Extract a clear, concise task description (5-10 words max)
+2. Extract a due date if mentioned (YYYY-MM-DD format)
+3. Decide whether to decompose the task into subtasks
+4. If decomposing, create 3-7 concrete, actionable subtasks
+5. Estimate time for the task (or sum of subtasks if decomposed)
+
+DECISION CRITERIA for decomposition:
+- Decompose if the task is complex and involves multiple distinct steps
+- Decompose if the task would take more than 30 minutes to complete
+- Decompose if breaking it down would make it less overwhelming
+- DO NOT decompose simple, straightforward tasks that can be done in one action
+- DO NOT decompose if the task is already specific and clear
+
+EXAMPLES:
+
+Simple tasks (DO NOT decompose):
+- "Call the dentist to reschedule appointment" → Single 5-minute action
+- "Update emergency contact form for school" → Already specific
+- "Send email to teacher about field trip" → Single action
+
+Complex tasks (SHOULD decompose):
+- "Plan Noah's birthday party" → Multiple steps: guest list, venue, cake, decorations, invitations
+- "Organize garage for spring cleaning" → Multiple steps: sort items, donate, clean, reorganize
+- "Prepare for Mae's school presentation" → Research, create slides, practice
+
+TIME ESTIMATION GUIDELINES:
+- Simple phone calls: 5-15 minutes
+- Quick errands: 15-30 minutes
+- Planning tasks: 30-120 minutes
+- Research tasks: 30-90 minutes
+- Organization tasks: 60-180 minutes
+
+SUBTASK GUIDELINES (if decomposing):
+- Create 3-7 subtasks (not too many, not too few)
+- Order subtasks logically (what needs to happen first)
+- Each subtask should be a concrete, actionable step
+- Estimate time for each subtask realistically
 
 Current date is {today}. Use this to calculate relative dates like "tomorrow", "next week", etc.
 
@@ -187,7 +224,7 @@ Current date is {today}. Use this to calculate relative dates like "tomorrow", "
             text: The user's brain dump text
 
         Returns:
-            Category-specific processed result - single task/event or list of shopping items
+            Category-specific processed result - task (with optional subtasks), list of shopping items, or calendar event
         """
         try:
             # Step 1: Detect category
@@ -206,8 +243,12 @@ Current date is {today}. Use this to calculate relative dates like "tomorrow", "
 
         except Exception as e:
             print(f"Error processing brain dump: {e}")
-            # Fallback to task
+            # Fallback to simple task without decomposition
             return ProcessedTask(
                 description=text[:100] + ("..." if len(text) > 100 else ""),
                 due_date=None,
+                estimated_time_minutes=15,
+                should_decompose=False,
+                reasoning="Error occurred during processing",
+                subtasks=[],
             )
