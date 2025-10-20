@@ -26,4 +26,5 @@ Thumbs.db
 *.log
 
 # Test database
-tests/test_database.db
+test_database.db
+**/test_database.db

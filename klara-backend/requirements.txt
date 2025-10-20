@@ -6,6 +6,7 @@ starlette==0.48.0
 # Database
 SQLAlchemy==2.0.44
 psycopg2-binary==2.9.11
+alembic==1.17.0
 
 # Data Validation
 pydantic[email]==2.12.0

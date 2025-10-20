@@ -4,11 +4,7 @@ from typing import Union, List
 from sqlalchemy.orm import Session
 from app.models import (
     BrainDumpRequest,
-    TaskResponse,
-    ShoppingItemResponse,
-    CalendarEventResponse,
-    ProcessedTask,
-    ProcessedCalendarEvent,
+    BrainDumpResponse,
 )
 from app.access import task_access, shopping_item_access, calendar_event_access
 from app.database import get_db
@@ -20,70 +16,96 @@ router = APIRouter(prefix="/brain-dumps", tags=["brain-dumps"])
 ai_service = AIService()
 
 
-@router.post(
-    "/",
-    response_model=Union[
-        TaskResponse, List[ShoppingItemResponse], CalendarEventResponse
-    ],
-)
+@router.post("/", response_model=BrainDumpResponse)
 async def process_brain_dump(request: BrainDumpRequest, db: Session = Depends(get_db)):
-    """Process a brain dump using AI and save to database"""
+    """Process a brain dump using AI and save all extracted items to database"""
     try:
         # Process the brain dump with AI
         processed = await ai_service.process_brain_dump(request.text)
 
-        result: Union[TaskResponse, List[ShoppingItemResponse], CalendarEventResponse]
-
-        # Save to database based on type
-        if isinstance(processed, ProcessedTask):
-            result = task_access.create_task(
+        # Save all tasks
+        saved_tasks = []
+        for task in processed.tasks:
+            # Create the parent task
+            saved_task = task_access.create_task(
                 session=db,
                 user_id=request.user_id,
-                description=processed.description,
-                due_date=datetime.strptime(processed.due_date, "%Y-%m-%d").date()
-                if processed.due_date
+                description=task.description,
+                due_date=datetime.strptime(task.due_date, "%Y-%m-%d").date()
+                if task.due_date
                 else None,
+                estimated_time_minutes=task.estimated_time_minutes,
                 raw_input=request.text,
             )
-        elif isinstance(processed, list):  # List of ProcessedShoppingItem
-            # Create a shopping item in DB for each processed item
-            result = []
-            for item in processed:
-                shopping_item = shopping_item_access.create_shopping_item(
+
+            # If task was decomposed, create subtasks
+            if task.should_decompose and task.subtasks:
+                subtasks_data = [
+                    {
+                        "description": subtask.description,
+                        "order": subtask.order,
+                        "estimated_time_minutes": subtask.estimated_time_minutes,
+                        "due_date": datetime.strptime(
+                            subtask.due_date, "%Y-%m-%d"
+                        ).date()
+                        if subtask.due_date
+                        else None,
+                    }
+                    for subtask in task.subtasks
+                ]
+                subtask_responses = task_access.create_subtasks(
                     session=db,
-                    user_id=request.user_id,
-                    description=item.description,
-                    raw_input=request.text,
+                    parent_task_id=saved_task.id,
+                    subtasks=subtasks_data,
                 )
-                result.append(shopping_item)
-        elif isinstance(processed, ProcessedCalendarEvent):
+                # Update task with subtasks
+                saved_task.subtasks = subtask_responses
+
+            saved_tasks.append(saved_task)
+
+        # Save all shopping items
+        saved_shopping_items = []
+        for item in processed.shopping_items:
+            saved_item = shopping_item_access.create_shopping_item(
+                session=db,
+                user_id=request.user_id,
+                description=item.description,
+                raw_input=request.text,
+            )
+            saved_shopping_items.append(saved_item)
+
+        # Save all calendar events
+        saved_calendar_events = []
+        for event in processed.calendar_events:
             # Convert event_date string to date object
-            event_date_obj = datetime.strptime(processed.event_date, "%Y-%m-%d").date()
+            event_date_obj = datetime.strptime(event.event_date, "%Y-%m-%d").date()
 
             # Convert event_time string to time object if provided
             event_time_obj = None
-            if processed.event_time:
+            if event.event_time:
                 # Handle both HH:MM and HH:MM:SS formats
                 time_format = (
-                    "%H:%M:%S" if processed.event_time.count(":") == 2 else "%H:%M"
+                    "%H:%M:%S" if event.event_time.count(":") == 2 else "%H:%M"
                 )
-                event_time_obj = datetime.strptime(
-                    processed.event_time, time_format
-                ).time()
+                event_time_obj = datetime.strptime(event.event_time, time_format).time()
 
-            result = calendar_event_access.create_calendar_event(
+            saved_event = calendar_event_access.create_calendar_event(
                 session=db,
                 user_id=request.user_id,
-                description=processed.description,
+                description=event.description,
                 event_date=event_date_obj,
                 event_time=event_time_obj,
                 raw_input=request.text,
             )
-        else:
-            raise ValueError(f"Unknown processed type: {type(processed)}")
+            saved_calendar_events.append(saved_event)
 
         db.commit()
-        return result
+
+        return BrainDumpResponse(
+            tasks=saved_tasks,
+            shopping_items=saved_shopping_items,
+            calendar_events=saved_calendar_events,
+        )
 
     except Exception as e:
         db.rollback()

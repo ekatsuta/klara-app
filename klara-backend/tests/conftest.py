@@ -13,7 +13,8 @@ from app.database import get_db
 
 
 # Use SQLite for testing - creates automatically, no setup needed
-TEST_DATABASE_URL = "sqlite:///./tests/test_database.db"
+# Use :memory: for in-memory database or specify a simple path
+TEST_DATABASE_URL = "sqlite:///./test_database.db"
 
 
 @pytest.fixture(scope="function")
@@ -71,7 +72,7 @@ def client(test_db_session):
 @pytest.fixture(scope="function")
 def test_user(test_db_session):
     """Create a test user in the database"""
-    user = User(email="test@example.com")
+    user = User(email="test@example.com", first_name="Test")
     test_db_session.add(user)
     test_db_session.commit()
     test_db_session.refresh(user)
