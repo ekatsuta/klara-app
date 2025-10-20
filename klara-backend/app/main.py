@@ -6,7 +6,7 @@ load_dotenv()
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routes import auth, brain_dumps, tasks, shopping_items, calendar_events
+from app.routes import auth, brain_dumps
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -28,9 +28,6 @@ app.add_middleware(
 # Include routers
 app.include_router(auth.router)
 app.include_router(brain_dumps.router)
-app.include_router(tasks.router)
-app.include_router(shopping_items.router)
-app.include_router(calendar_events.router)
 
 
 @app.get("/")

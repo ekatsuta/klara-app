@@ -27,6 +27,21 @@ class BrainDumpRequest(BaseModel):
 
 
 # AI Processing models
+class ProcessedBrainDump(BaseModel):
+    """Result of processing a brain dump - can contain multiple categories"""
+
+    tasks: List["ProcessedTask"] = Field(
+        default_factory=list, description="Tasks extracted from the brain dump"
+    )
+    shopping_items: List["ProcessedShoppingItem"] = Field(
+        default_factory=list, description="Shopping items extracted from the brain dump"
+    )
+    calendar_events: List["ProcessedCalendarEvent"] = Field(
+        default_factory=list,
+        description="Calendar events extracted from the brain dump",
+    )
+
+
 class CategoryDetection(BaseModel):
     """AI category detection result"""
 
@@ -125,3 +140,11 @@ class SubTaskResponse(BaseModel):
     order: int
     completed: bool
     created_at: datetime
+
+
+class BrainDumpResponse(BaseModel):
+    """Response after processing and saving a brain dump"""
+
+    tasks: List[TaskResponse] = Field(default_factory=list)
+    shopping_items: List[ShoppingItemResponse] = Field(default_factory=list)
+    calendar_events: List[CalendarEventResponse] = Field(default_factory=list)

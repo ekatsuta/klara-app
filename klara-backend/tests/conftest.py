@@ -13,7 +13,8 @@ from app.database import get_db
 
 
 # Use SQLite for testing - creates automatically, no setup needed
-TEST_DATABASE_URL = "sqlite:///./tests/test_database.db"
+# Use :memory: for in-memory database or specify a simple path
+TEST_DATABASE_URL = "sqlite:///./test_database.db"
 
 
 @pytest.fixture(scope="function")
