@@ -42,12 +42,6 @@ class ProcessedBrainDump(BaseModel):
     )
 
 
-class CategoryDetection(BaseModel):
-    """AI category detection result"""
-
-    category: Literal["task", "shopping_list", "calendar_event"]
-
-
 class ProcessedTask(BaseModel):
     """AI-processed task data with optional decomposition"""
 

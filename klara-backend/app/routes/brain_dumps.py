@@ -45,7 +45,9 @@ async def process_brain_dump(request: BrainDumpRequest, db: Session = Depends(ge
                         "description": subtask.description,
                         "order": subtask.order,
                         "estimated_time_minutes": subtask.estimated_time_minutes,
-                        "due_date": datetime.strptime(subtask.due_date, "%Y-%m-%d").date()
+                        "due_date": datetime.strptime(
+                            subtask.due_date, "%Y-%m-%d"
+                        ).date()
                         if subtask.due_date
                         else None,
                     }
@@ -82,7 +84,9 @@ async def process_brain_dump(request: BrainDumpRequest, db: Session = Depends(ge
             event_time_obj = None
             if event.event_time:
                 # Handle both HH:MM and HH:MM:SS formats
-                time_format = "%H:%M:%S" if event.event_time.count(":") == 2 else "%H:%M"
+                time_format = (
+                    "%H:%M:%S" if event.event_time.count(":") == 2 else "%H:%M"
+                )
                 event_time_obj = datetime.strptime(event.event_time, time_format).time()
 
             saved_event = calendar_event_access.create_calendar_event(

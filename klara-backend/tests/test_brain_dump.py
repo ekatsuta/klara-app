@@ -64,7 +64,7 @@ def test_task_simple(client, test_user):
     response = client.post(
         "/brain-dumps/",
         json={
-            "text": "Call the plumber about the leaky faucet",
+            "text": "Call the school about upcoming absence",
             "user_id": test_user.id,
         },
     )
