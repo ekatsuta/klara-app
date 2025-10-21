@@ -1,5 +1,5 @@
-export interface User {
-  id: string;
+export interface UserResponse {
+  id: number;
   email: string;
-  firstName: string;
+  first_name: string;
 }
